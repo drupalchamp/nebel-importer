@@ -1,0 +1,6 @@
+custom_product_importer.product_import:
+  title: 'Import Products'
+  route_name: custom_product_importer.product_import
+  parent: commerce.configuration
+  weight: 0
+  description: 'Import products from a CSV file.'

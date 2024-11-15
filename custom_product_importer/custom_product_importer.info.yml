@@ -1,0 +1,7 @@
+name: 'Custom Product Importer'
+type: module
+description: 'A module to import products.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - csv_importer:csv_importer

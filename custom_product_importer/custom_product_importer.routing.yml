@@ -1,0 +1,7 @@
+custom_product_importer.product_import:
+  path: '/admin/config/product-import'
+  defaults:
+    _form: '\Drupal\custom_product_importer\Form\ProductImportForm'
+    _title: 'Import Products'
+  requirements:
+    _permission: 'administer site configuration'
