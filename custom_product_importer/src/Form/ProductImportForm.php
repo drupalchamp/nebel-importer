@@ -10,6 +10,8 @@ use Drupal\commerce_pricelist\Entity\PricelistItem;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_product\Entity\ProductAttributeValue;
 use Drupal\taxonomy\Entity\Term;
+use Drupal\commerce_price\Price;
+use Drupal\commerce_pricelist\Entity\Pricelist;
 
 
 class ProductImportForm extends FormBase {
@@ -96,6 +98,8 @@ class ProductImportForm extends FormBase {
     }
   }
 
+
+  
   /**
    * Retrieves or creates a category term by name.
    */
@@ -145,16 +149,27 @@ class ProductImportForm extends FormBase {
         $customs_tariff_number = $this->sanitizeInput($data[11]); 
         $price = $this->sanitizeInput($data[12]);
         $unit_1 = $this->sanitizeInput($data[13]);
-        $price_1 = $this->sanitizeInput($data[14]);
+        $price_1 = $this->sanitizeInput($data[14]); 
+
+        $unit_2 = $this->sanitizeInput($data[15]);
+        $price_2 = $this->sanitizeInput($data[16]);
+
+        $unit_3 = $this->sanitizeInput($data[17]);
+        $price_3 = $this->sanitizeInput($data[18]);
+
+        $unit_4 = $this->sanitizeInput($data[19]);
+        $price_4 = $this->sanitizeInput($data[20]);
+
+        $unit_5 = $this->sanitizeInput($data[21]);
+        $price_5 = $this->sanitizeInput($data[22]);  
+  
 
         // Get the brand term ID.
         $brand_term_id = $this->getBrandTermIdByName($brand_name);
         $category_term_id = $this->getCategoryTermIdByName($category_name);
 
         // Load existing product by custom product ID.
-        $existing_product = \Drupal::entityTypeManager()
-          ->getStorage('commerce_product')
-          ->loadByProperties(['field_custom_product_id' => $custom_product_id]);
+        $existing_product = \Drupal::entityTypeManager()->getStorage('commerce_product')->loadByProperties(['field_custom_product_id' => $custom_product_id]);
 
         if ($existing_product) {
           $product = reset($existing_product);
@@ -186,8 +201,8 @@ class ProductImportForm extends FormBase {
             $price_list = \Drupal::entityTypeManager()
             ->getStorage('commerce_pricelist')
             ->loadByProperties(['name' => 'Price table']);
-          $price_list = reset($price_list);
-
+            $pricelist = reset($price_list);           
+  
             $new_variation = ProductVariation::create([
               'type' => 'nebel',
               'sku' => $sku,
@@ -196,21 +211,42 @@ class ProductImportForm extends FormBase {
               'status' => 1,
               'attribute_color' => $color_attribute_id,
             ]); 
-            
-            $pricelist_item = PricelistItem::create([
-              'type' => 'commerce_product_variation', // Replace with your price list item type if different.
-              'title' => $variation_title,
-              'variation' => $new_variation->id(),
-              'quantity' => $unit_1,
-              'price' => new \Drupal\commerce_price\Price($price_1, 'EUR'),
-              'price_list_id' => $price_list->id()
-            ]);
-          
-            // Save the PricelistItem.
-            $pricelist_item->save();
             $new_variation->save();                     
             $product->addVariation($new_variation);
             
+            for($i=1; $i!=6; $i++){
+              $unit_variable = ${'unit_' . $i}; // Equivalent to $unit_1, $unit_2, etc.
+              $price_variable = ${'price_' . $i}; // Equivalent to $price_1, $price_2, etc.
+    
+              if(isset($unit_variable) && isset($price_variable)){
+                $existing_price_item = \Drupal::entityTypeManager()
+                ->getStorage('commerce_pricelist_item')
+                ->loadByProperties([
+                 'type' => 'commerce_product_variation',
+                  'quantity' => $unit_variable,
+                  'purchasable_entity' => $new_variation->id(),
+                  'price_list_id' => $pricelist->id()
+                ]);
+  
+  
+  
+                if (!isset($existing_price_item) || empty($existing_price_item)) {
+                $price_item = PriceListItem::create([
+                  'type' => 'commerce_product_variation',
+                  'pricelist' => $pricelist->id(),
+                  'quantity' => $unit_variable,
+                  'purchasable_entity' => $new_variation->id(),
+                  // 'purchasable_entity' => $new_variation->id(),
+                  'price' => new \Drupal\commerce_price\Price($price_variable, 'EUR'),
+                  'variation' => $new_variation->id(),
+                  'price_list_id' => $pricelist->id()
+                ]);
+              }
+                // Save the PricelistItem.
+                $price_item->save();
+              }
+            }      
+
           }
 
           $product->setTitle($product_title);
@@ -240,8 +276,8 @@ class ProductImportForm extends FormBase {
           $price_list = \Drupal::entityTypeManager()
           ->getStorage('commerce_pricelist')
           ->loadByProperties(['name' => 'Price table']);
-        $price_list = reset($price_list);
-        
+          $pricelist = reset($price_list);    
+
           $new_variation = ProductVariation::create([
             'type' => 'nebel',
             'sku' => $sku,
@@ -250,21 +286,44 @@ class ProductImportForm extends FormBase {
             'status' => 1,
             'attribute_color' => $color_attribute_id,
           ]);
-
-          $pricelist_item = PricelistItem::create([
-            'type' => 'commerce_product_variation', // Replace with your price list item type if different.
-            'title' => $variation_title,
-            'variation' => $new_variation->id(),
-            'quantity' => $unit_1,
-            'price' => new \Drupal\commerce_price\Price($price_1, 'EUR'),
-            'price_list_id' => $price_list->id()
-          ]);
-        
-          // Save the PricelistItem.
-          $pricelist_item->save();
-
-          $new_variation->save();           
+          $new_variation->save(); 
           $product->addVariation($new_variation);
+
+          for($i=1; $i!=6; $i++){
+        
+            $unit_variable = ${'unit_' . $i}; // Equivalent to $unit_1, $unit_2, etc.
+            $price_variable = ${'price_' . $i}; // Equivalent to $price_1, $price_2, etc.
+ 
+            if(isset($unit_variable) && isset($price_variable)){
+
+              $existing_price_item = \Drupal::entityTypeManager()
+              ->getStorage('commerce_pricelist_item')
+              ->loadByProperties([
+                'type' => 'commerce_product_variation',
+                  'quantity' => $unit_variable,
+                  'purchasable_entity' => $new_variation->id(),
+                  'price_list_id' => $pricelist->id()
+              ]);
+
+
+
+              if (empty($existing_price_item)) {
+              $price_item = PriceListItem::create([
+               'type' => 'commerce_product_variation',
+                  'pricelist' => $pricelist->id(),
+                  'quantity' => $unit_variable,
+                  'purchasable_entity' => $new_variation->id(),
+                  // 'purchasable_entity' => $new_variation->id(),
+                  'price' => new \Drupal\commerce_price\Price($price_variable, 'EUR'),
+                  'variation' => $new_variation->id(),
+                  'price_list_id' => $pricelist->id()
+              ]);
+            }
+              // Save the PricelistItem.
+              $price_item->save();
+            }
+          }
+
           $product->save();
         }
       }
