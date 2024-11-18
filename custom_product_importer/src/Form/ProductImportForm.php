@@ -29,8 +29,8 @@ class ProductImportForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form['csv_file'] = [
       '#type' => 'managed_file',
-      '#title' => $this->t('Upload CSV File'),
-      '#description' => $this->t('Upload a CSV file with product data.'),
+      '#title' => self::t('Upload CSV File'),
+      '#description' => self::t('Upload a CSV file with product data.'),
       '#upload_location' => 'public://import_products/',
       '#upload_validators' => [
         'file_validate_extensions' => ['csv'],
@@ -42,7 +42,7 @@ class ProductImportForm extends FormBase {
     ];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Import'),
+      '#value' => self::t('Import'),
       '#button_type' => 'primary',
     ];
 
@@ -57,10 +57,39 @@ class ProductImportForm extends FormBase {
     $file = File::load($fid);
 
     if ($file) {
-      $this->processCsv($file);
-      \Drupal::messenger()->addMessage($this->t('Products imported successfully.'));
+      // self::processCsv($file);
+      $csv_path = $file->getFileUri();
+      $product_data = [];
+
+// Open the file for reading
+if (($handle = fopen($csv_path, 'r')) !== FALSE) {
+    // Get the header row (optional)
+    $headers = fgetcsv($handle);
+
+    // Loop through each row of the CSV
+    while (($row = fgetcsv($handle)) !== FALSE) {
+        // Combine headers with row data for associative array (optional)
+        $product_data[] = array_combine($headers, $row);
+    }
+
+    // Close the file after reading
+    fclose($handle);
+}
+
+$batch =[
+  'title' => 'Importing product data from CSV...',
+  'operations' => [],
+  'finished' => [__CLASS__,'batchFinished']
+];
+
+//calling batchProcess for each chunk(2) of nodes
+forEach(array_chunk($product_data,2) as $chunk){
+  $batch['operations'][] = [[__CLASS__,"batchProcess"],[$chunk]];
+}
+batch_set($batch);
+      \Drupal::messenger()->addMessage(self::t('Products imported successfully.'));
     } else {
-      \Drupal::messenger()->addError($this->t('File upload failed.'));
+      \Drupal::messenger()->addError(self::t('File upload failed.'));
     }
   }
 
@@ -73,14 +102,14 @@ class ProductImportForm extends FormBase {
    * @return string
    *   The sanitized input.
    */
-  protected function sanitizeInput($input) {
-    return mb_convert_encoding($input, 'UTF-8', 'auto');
-  }
+  // public static function sanitizeInput($input) {
+  //   return mb_convert_encoding($input, 'UTF-8', 'auto');
+  // }
 
   /**
    * Retrieves or creates a brand term by name.
    */
-  protected function getBrandTermIdByName($brand_name) {
+  public static function getBrandTermIdByName($brand_name) {
     $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
       'name' => $brand_name,
       'vid' => 'brands', 
@@ -124,49 +153,64 @@ class ProductImportForm extends FormBase {
   /**
    * Processes the CSV file and imports product data.
    */
-  protected function processCsv($file) {
-    $csv_path = $file->getFileUri();
+  public static function batchProcess($product_data,$context) {
+    // $csv_path = $file->getFileUri();
 
-    if (($handle = fopen($csv_path, 'r')) !== FALSE) {
-      fgetcsv($handle, 1000, ','); // Skip header row
+    // if (($handle = fopen($csv_path, 'r')) !== FALSE) {
+    //   fgetcsv($handle, 1000, ','); // Skip header row
 
-      while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
-        if (empty(array_filter($data))) {
-          continue; // Skip empty rows
-        }
+    //   while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+    //     if (empty(array_filter($data))) {
+    //       continue; // Skip empty rows
+    //     }
+forEach($product_data as $key => $data){
+  dump($key);
+        $category_name = mb_convert_encoding($data[0], 'UTF-8', 'auto');
+        $brand_name = $data[1];
+   
+        $custom_product_id = mb_convert_encoding($data[2], 'UTF-8', 'auto');
+        $sku = mb_convert_encoding($data[3], 'UTF-8', 'auto');
+        $article_group = mb_convert_encoding($data[4], 'UTF-8', 'auto');
+        $merchandise_group = mb_convert_encoding($data[5], 'UTF-8', 'auto');
+        $variation_title = mb_convert_encoding($data[6], 'UTF-8', 'auto');
+        $product_title = mb_convert_encoding($data[7], 'UTF-8', 'auto');
+        $color = mb_convert_encoding($data[8], 'UTF-8', 'auto');
+        $guise = mb_convert_encoding($data[9], 'UTF-8', 'auto');
+        $weight_kg = mb_convert_encoding($data[10], 'UTF-8', 'auto');
+        $customs_tariff_number = mb_convert_encoding($data[11], 'UTF-8', 'auto'); 
+        $price = mb_convert_encoding($data[12], 'UTF-8', 'auto');
+        $unit_1 = mb_convert_encoding($data[13], 'UTF-8', 'auto');
+        $price_1 = mb_convert_encoding($data[14], 'UTF-8', 'auto'); 
 
-        $category_name = $this->sanitizeInput($data[0]);
-        $brand_name = $this->sanitizeInput($data[1]);
-        $custom_product_id = $this->sanitizeInput($data[2]);
-        $sku = $this->sanitizeInput($data[3]);
-        $article_group = $this->sanitizeInput($data[4]);
-        $merchandise_group = $this->sanitizeInput($data[5]);
-        $variation_title = $this->sanitizeInput($data[6]);
-        $product_title = $this->sanitizeInput($data[7]);
-        $color = $this->sanitizeInput($data[8]);
-        $guise = $this->sanitizeInput($data[9]);
-        $weight_kg = $this->sanitizeInput($data[10]);
-        $customs_tariff_number = $this->sanitizeInput($data[11]); 
-        $price = $this->sanitizeInput($data[12]);
-        $unit_1 = $this->sanitizeInput($data[13]);
-        $price_1 = $this->sanitizeInput($data[14]); 
+        $unit_2 = mb_convert_encoding($data[15], 'UTF-8', 'auto');
+        $price_2 = mb_convert_encoding($data[16], 'UTF-8', 'auto');
 
-        $unit_2 = $this->sanitizeInput($data[15]);
-        $price_2 = $this->sanitizeInput($data[16]);
+        $unit_3 = mb_convert_encoding($data[17], 'UTF-8', 'auto');
+        $price_3 = mb_convert_encoding($data[18], 'UTF-8', 'auto');
 
-        $unit_3 = $this->sanitizeInput($data[17]);
-        $price_3 = $this->sanitizeInput($data[18]);
+        $unit_4 = mb_convert_encoding($data[19], 'UTF-8', 'auto');
+        $price_4 = mb_convert_encoding($data[20], 'UTF-8', 'auto');
 
-        $unit_4 = $this->sanitizeInput($data[19]);
-        $price_4 = $this->sanitizeInput($data[20]);
-
-        $unit_5 = $this->sanitizeInput($data[21]);
-        $price_5 = $this->sanitizeInput($data[22]);  
-  
-
+        $unit_5 = mb_convert_encoding($data[21], 'UTF-8', 'auto');
+        $price_5 = mb_convert_encoding($data[22], 'UTF-8', 'auto');  
+  // dump($brand_name);
+        $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
+          'name' => $brand_name,
+          'vid' => 'brands', 
+        ]);
+    
+        if (!empty($terms)) {
+          return reset($terms)->id();
+        } else {
+          $term = Term::create([
+            'vid' => 'brands', 
+            'name' => $brand_name,
+          ]);
+          $term->save();
+        
         // Get the brand term ID.
-        $brand_term_id = $this->getBrandTermIdByName($brand_name);
-        $category_term_id = $this->getCategoryTermIdByName($category_name);
+        $brand_term_id = $term->id();
+        $category_term_id = self::getCategoryTermIdByName($category_name);
 
         // Load existing product by custom product ID.
         $existing_product = \Drupal::entityTypeManager()->getStorage('commerce_product')->loadByProperties(['field_custom_product_id' => $custom_product_id]);
@@ -183,7 +227,7 @@ class ProductImportForm extends FormBase {
               if (empty($color)) {
                 $variation->set('attribute_color', NULL);
               } else {
-                $color_attribute_id = $this->getColorAttributeId($color);
+                $color_attribute_id = self::getColorAttributeId($color);
                 $variation->set('attribute_color', $color_attribute_id);
               }
 
@@ -196,7 +240,7 @@ class ProductImportForm extends FormBase {
           }
 
           if (!$variation_found) {
-            $color_attribute_id = $this->getColorAttributeId($color);
+            $color_attribute_id = self::getColorAttributeId($color);
 
             $price_list = \Drupal::entityTypeManager()
             ->getStorage('commerce_pricelist')
@@ -271,7 +315,7 @@ class ProductImportForm extends FormBase {
           $product->set('field_weight_kg', $weight_kg);
           $product->set('field_customs_tariff_number', $customs_tariff_number);
 
-          $color_attribute_id = $this->getColorAttributeId($color);
+          $color_attribute_id = self::getColorAttributeId($color);
 
           $price_list = \Drupal::entityTypeManager()
           ->getStorage('commerce_pricelist')
@@ -328,9 +372,21 @@ class ProductImportForm extends FormBase {
         }
       }
 
-      fclose($handle);
+      // fclose($handle);
+      $context['message'] = t('Processing @count-@count products at a time', ['@count' => count($data)]);
     }
+
   }
+
+    public static function batchFinished($success,$results, $operations){
+      if ($success) {
+        \Drupal::messenger()->addStatus(t('All products have been imported successfully.'));
+      }
+      else {
+        \Drupal::messenger()->addError(t('An error occurred while importing products.'));
+      }
+    }
+  
   
   /**
    * Retrieves or creates the color attribute ID by color name.
@@ -341,7 +397,7 @@ class ProductImportForm extends FormBase {
    * @return int|null
    *   The color attribute ID, or NULL if not found.
    */
-  protected function getColorAttributeId($color_name) {
+  public static function getColorAttributeId($color_name) {
     // Use the entity type manager to query for ProductAttributeValue entities.
     $storage = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value');
     $color_values = $storage->loadByProperties(['name' => $color_name]);
@@ -359,5 +415,8 @@ class ProductImportForm extends FormBase {
   
       return $color->id();
     }
+  
+
+
   }
 }
