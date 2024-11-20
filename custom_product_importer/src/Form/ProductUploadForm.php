@@ -14,9 +14,9 @@ use Drupal\taxonomy\Entity\Term;
 
 
 /**
- * Class ProductImportForm
+ * Class ProductUploadForm
  * 
- * This class extends FormBase and is used to import product data from a CSV file.
+ * This class extends FormBase and is used to upload product data from a CSV file.
  * It provides methods for building the form, handling form submission, processing the CSV file, and managing related entities.
  * 
  * @property string $formId The form ID.
@@ -24,19 +24,19 @@ use Drupal\taxonomy\Entity\Term;
  * @property \Drupal\Core\Form\FormStateInterface $form_state The form state.
  */
 
-class ProductImportForm extends FormBase
+class ProductUploadForm extends FormBase
 {
 
 
   /**
-   * Returns the unique form ID for the product import form.
+   * Returns the unique form ID for the product upload form.
    *
    * @return string
    *   The form ID as a string.
    */
   public function getFormId()
   {
-    return 'product_import_form';
+    return 'product_upload_form';
   }
 
 
@@ -60,7 +60,7 @@ class ProductImportForm extends FormBase
       '#type' => 'managed_file',
       '#title' => $this->t('Upload CSV File'),
       '#description' => $this->t('Upload a CSV file with product data.'),
-      '#upload_location' => 'public://import_products/',
+      '#upload_location' => 'public://upload_products/',
       '#upload_validators' => [
         'file_validate_extensions' => ['csv'],
       ],
@@ -71,7 +71,7 @@ class ProductImportForm extends FormBase
     ];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Import'),
+      '#value' => $this->t('Upload'),
       '#button_type' => 'primary',
     ];
 
@@ -132,8 +132,9 @@ class ProductImportForm extends FormBase
       foreach (array_chunk($product_data, 50) as $chunk) {
         $batch['operations'][] = [[__CLASS__, "batchProcess"], [$chunk]];
       }
+      dump($product_data);
 
-      batch_set($batch);
+      // batch_set($batch);
       \Drupal::messenger()->addMessage($this->t('Products imported successfully.'));
     } else {
       \Drupal::messenger()->addError($this->t('File upload failed.'));
@@ -216,12 +217,11 @@ class ProductImportForm extends FormBase
   {
 
     foreach ($product_data as $key => $data) {
-
       $category = self::sanitizeInput($data['category']);
       $sub_category = self::sanitizeInput($data['sub_category']);
       $brand_name = self::sanitizeInput($data['brand_name']);
       $custom_product_id = self::sanitizeInput($data['custom_product_id']);
-      $sku = self::sanitizeInput($data['sku']);
+      $sku = self::sanitizeInput($data['0']);
       $article_group = self::sanitizeInput($data['article_group']);
       $merchandise_group = self::sanitizeInput($data['merchandise_group']);
       $v_title = self::sanitizeInput($data['variation_Title']);
@@ -305,6 +305,16 @@ class ProductImportForm extends FormBase
       }
     }
 
+
+$product_variation = \Drupal::entityTypeManager()
+    ->getStorage('commerce_product_variation')
+    ->loadByProperties(['sku' => $sku]);
+
+$product_variation = reset($product_variation); //loading variation
+
+if ($product_variation) {
+  $existing_product = $product_variation->getProduct(); //loading product using variation
+}
       
       // Load existing product by custom product ID.
       $existing_product = \Drupal::entityTypeManager()->getStorage('commerce_product')->loadByProperties(['field_custom_product_id' => $custom_product_id]);
@@ -552,6 +562,7 @@ class ProductImportForm extends FormBase
 
       $context['message'] = t('Processing products import');
     }
+    
     
   }
 

@@ -5,3 +5,35 @@ custom_product_importer.product_import:
     _title: 'Import Products'
   requirements:
     _permission: 'administer site configuration'
+
+custom_product_importer.product_upload:
+  path: '/admin/config/product-upload'
+  defaults:
+    _form: '\Drupal\custom_product_importer\Form\ProductUploadForm'
+    _title: 'Upload Products'
+  requirements:
+    _permission: 'administer site configuration'    
+
+custom_product_importer.product_image_import:
+  path: '/admin/config/product-image-import'
+  defaults:
+    _form: '\Drupal\custom_product_importer\Form\ProductImageImportForm'
+    _title: 'Import Product Images'
+  requirements:
+    _permission: 'administer site configuration'
+
+custom_product_importer.config_form:
+  path: '/admin/config/product-import/settings'
+  defaults:
+    _form: '\Drupal\custom_product_importer\Form\CustomConfigForm'
+    _title: 'Product Importer Settings'
+  requirements:
+    _permission: 'administer site configuration'
+
+# custom_product_importer.product_delete:
+#   path: '/admin/config/product-delete'
+#   defaults:
+#     _form: '\Drupal\custom_product_importer\Form\ProductDeleteForm'
+#     _title: 'Product delete'
+#   requirements:
+#     _permission: 'administer site configuration'
