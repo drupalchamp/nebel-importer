@@ -31,7 +31,7 @@ class CustomConfigForm extends ConfigFormBase {
 
     $form['custom_textbox'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Enter CSV Path'),
+      '#title' => $this->t('Set product file Path'),
       '#default_value' => $config->get('custom_textbox') ?: '',
       '#description' => $this->t('Please enter path to update the products.'),
     ];

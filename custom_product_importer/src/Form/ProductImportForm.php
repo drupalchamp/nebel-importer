@@ -226,14 +226,14 @@ class ProductImportForm extends FormBase
       $merchandise_group = self::sanitizeInput($data['merchandise_group']);
       $v_title = self::sanitizeInput($data['variation_Title']);
       $variation_title= $v_title;
-      if(str_contains($v_title, ',,') || str_contains($v_title, ',') || str_contains($v_title, '.') || str_contains($v_title, 'â„¢') || str_contains($v_title, 'Å¡') || str_contains($v_title, 'Å½') || str_contains($v_title, '+')){
+      if(str_contains($v_title, ',,') || str_contains($v_title, ',') || str_contains($v_title, '.') || str_contains($v_title, '™') || str_contains($v_title, 'š') || str_contains($v_title, '') || str_contains($v_title, '+')){
         $variation_title= '"'.$v_title.'"';
       }else{
         $variation_title= $v_title;
       }
       $p_title = self::sanitizeInput($data['product_title']);
       $product_title= $p_title;
-      if(str_contains($p_title, ',,') || str_contains($p_title, ',') || str_contains($p_title, '.') || str_contains($p_title, 'â„¢') || str_contains($p_title, 'Å¡') || str_contains($p_title, 'Å½') || str_contains($p_title, '+')){
+      if(str_contains($p_title, ',,') || str_contains($p_title, ',') || str_contains($p_title, '.') || str_contains($p_title, '™') || str_contains($p_title, 'š') || str_contains($p_title, '') || str_contains($p_title, '+')){
         $product_title= '"'.$p_title.'"';
       }else{
         $product_title= $p_title;
@@ -272,38 +272,7 @@ class ProductImportForm extends FormBase
      
       // $category_term_id = self::getCategoryTermIdByName($category_name);
 
-      $parent_term_id=self::getCategoryTermIdByName($category);
-      // $child_term_id=self::getCategoryTermIdByName($sub_category);
-
-      $parent_term = Term::load($parent_term_id);
-      $category_to_add = $parent_term_id;
-      $vocabulary_id = 'product';
-
-      $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
-        'name' => $sub_category,
-        'vid' => 'product',
-      ]);
-  
-      if (!empty($terms)) {
-        $term = reset($terms);
-        $category_to_add =$term->id();
-      } 
-      else{
-
-      if ($parent_term && $parent_term->bundle() === $vocabulary_id) {
-        // Create the new child term.
-        $child_term = Term::create([
-          'name' => $sub_category,
-          'vid' => $vocabulary_id,
-          'parent' => [$parent_term_id],
-        ]);
-      
-      
-        // Save the child term.
-        $child_term->save();
-        $category_to_add = $child_term->id();
-      }
-    }
+      $category_to_add=self::getCategoryTermIdByName($sub_category);
 
       
       // Load existing product by custom product ID.
@@ -380,8 +349,7 @@ class ProductImportForm extends FormBase
                       $existing_price_item_data->save();
                    } 
                 }
-                // Save the PricelistItem.
-                // $price_item->save();
+
               }
             }
             break;

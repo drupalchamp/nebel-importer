@@ -5,12 +5,6 @@ custom_product_importer.product_import:
   weight: 0
   description: 'Import products from a CSV file.'
 
-custom_product_importer.product_upload:
-  title: 'Upload Products'
-  route_name: custom_product_importer.product_upload
-  parent: commerce.configuration
-  weight: 1
-  description: 'Upload products from a CSV file.'  
 
 custom_product_importer.product_image_import:
   title: 'Import Product Images'
@@ -20,7 +14,7 @@ custom_product_importer.product_image_import:
   description: 'Import products from a CSV file.'
 
 custom_product_importer.config_form:
-  title: 'Product Update CSV Path Settings'
+  title: 'Product file path setting'
   route_name: custom_product_importer.config_form  
   parent: commerce.configuration  
   weight: 3
