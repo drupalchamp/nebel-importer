@@ -5,14 +5,6 @@ custom_product_importer.product_import:
   weight: 0
   description: 'Import products from a CSV file.'
 
-
-custom_product_importer.product_image_import:
-  title: 'Import Product Images'
-  route_name: custom_product_importer.product_image_import
-  parent: commerce.configuration
-  weight: 2
-  description: 'Import products from a CSV file.'
-
 custom_product_importer.config_form:
   title: 'Product file path setting'
   route_name: custom_product_importer.config_form  
@@ -26,3 +18,11 @@ custom_product_importer.config_form:
 #   parent: commerce.configuration
 #   weight: 10
 #   description: 'Delete the product before upload CSV.'
+
+
+custom_product_importer.product_image_and_attributes_import:
+  title: 'Import Product Attributes'
+  route_name: custom_product_importer.product_attributes_import
+  parent: commerce.configuration
+  weight: 100
+  description: 'Import product attributes from a CSV file.'  

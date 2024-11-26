@@ -30,3 +30,13 @@ custom_product_importer.product_delete:
     _title: 'Product delete'
   requirements:
     _permission: 'administer site configuration'
+
+
+
+custom_product_importer.product_attributes_import:
+  path: '/admin/config/product-attributes-import'
+  defaults:
+    _form: '\Drupal\custom_product_importer\Form\ProductAttributesImporter'
+    _title: 'Import Product Attributes'
+  requirements:
+    _permission: 'administer site configuration'

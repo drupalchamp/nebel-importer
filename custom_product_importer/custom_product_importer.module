@@ -45,41 +45,67 @@ use Drupal\taxonomy\Entity\Term;
 
 
 function custom_product_importer_cron() {
+
   // Getting CSV file path from config object's custom textfield field
+
   $config = \Drupal::config('custom_product_importer.settings');
-  $value = $config->get('custom_textbox');
-  $csv_path=$value;
-  //  $csv_path = 'https://demoworksite.online/sites/default/files/product_data/dummy-data.csv';   
+
+  $csv_path_value_from_config = $config->get('custom_textbox');
+  $csv_path = $csv_path_value_from_config;
+
+  //  $csv_path = 'C:\Users\Admin\Downloads\dummy-data-update.csv';   
+
+
+
+  // Function to check if a path points to a CSV file
+  function is_csv_file($path) {
+      // Get the extension of the file and convert it to lowercase
+      $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+      return $extension === 'csv';
+  }
 
 
   $valid_csv_path = false;
+  // Check if the path is a valid file and has a .csv extension
   if (filter_var($csv_path, FILTER_VALIDATE_URL)) {
-    if (pathinfo($csv_path, PATHINFO_EXTENSION) === 'csv') {
+
+
+      // If it's a URL, check the extension
+      if (is_csv_file($csv_path)) {
+        $valid_csv_path = true;
+      } else {
+        $valid_csv_path = false;
+      }
+
+
+  } elseif (file_exists($csv_path) && is_csv_file($csv_path)) {
+
+      // If it's a local file, check if it exists and has a .csv extension
       $valid_csv_path = true;
-    } else {
-      $valid_csv_path = false;
-    }
-} elseif (file_exists($csv_path) && pathinfo($csv_path, PATHINFO_EXTENSION) === 'csv') {
-    
-  $valid_csv_path = true;
-} else {
-  $valid_csv_path = false;
-}
+
+
+  } else {
+
+    $valid_csv_path = false;
+
+  }
+
+
 
 
 if($valid_csv_path){
 
-   // Initialize an empty array to store the product data
+
    $product_data = [];
    
-   // Open the file for reading
-   if (($handle = fopen($csv_path, 'r')) !== FALSE) {
-     // Get the header row (optional)
-     while (($row = fgetcsv($handle)) !== FALSE) {
-      // Add each row of data to the $product_data array
-      $product_data[] = $row;
-    }
 
+// Open the input CSV file for reading
+if (($handle = fopen($csv_path, 'r')) !== false) {
+  while (($row = fgetcsv($handle)) !== false) {
+
+    $combinedData = implode(',', $row);
+    $product_data[] = $combinedData;
+}
      // Close the file after reading
      fclose($handle);
    }
@@ -111,52 +137,139 @@ function custom_product_importer_batch_process($product_data, $context)
   {
 
     foreach ($product_data as $key  => $data) {
-      $new_arr = [];
-      foreach($data as $k=> $v){
-      $new_arr[]= $v;
+      // dump($data[0]);
+      $data_chunk = explode(';',$data);
+      // Extracting data from CSV record
+      $sku =  sanitizeInput($data_chunk[0]); 
+      $article_group =  sanitizeInput($data_chunk[1]);  
+
+      $m_group =  sanitizeInput($data_chunk[3]);  
+      $merchandise_group= $m_group;
+      if(str_contains($m_group, ',,') || str_contains($m_group, ',') || str_contains($m_group, '.') || str_contains($m_group, 'ï¿½') || str_contains($m_group, 'ï¿½') || str_contains($m_group, 'ï¿½') || str_contains($m_group, '+')){
+        $merchandise_group= '"'.$m_group.'"';
+      }else{
+        $merchandise_group= $m_group;
       }
 
-      // Extracting data from CSV record
-      $sku =  sanitizeInput($new_arr[0]);
-      $article_group =  sanitizeInput($new_arr[1]);
-      $merchandise_group =  sanitizeInput($new_arr[4]);
-      $v_title =  sanitizeInput($new_arr[6]);
+      $v_title =  sanitizeInput($data_chunk[5]);  
       $variation_title= $v_title;
-      if(str_contains($v_title, ',,') || str_contains($v_title, ',') || str_contains($v_title, '.') || str_contains($v_title, '™') || str_contains($v_title, 'š') || str_contains($v_title, '') || str_contains($v_title, '+')){
+      if(str_contains($v_title, ',,') || str_contains($v_title, ',') || str_contains($v_title, '.') || str_contains($v_title, 'ï¿½') || str_contains($v_title, 'ï¿½') || str_contains($v_title, 'ï¿½') || str_contains($v_title, '+')){
         $variation_title= '"'.$v_title.'"';
       }else{
         $variation_title= $v_title;
       }
 
-      $color =  sanitizeInput($new_arr[7]);
-      $guise =  sanitizeInput($new_arr[10]);
-      $weight_kg =  (float) sanitizeInput($new_arr[11]);
+      $color =  sanitizeInput($data_chunk[6]);
+      // $format = sanitizeInput($data_chunk[8]);
+      $guise =  sanitizeInput($data_chunk[9]);
+      $weight_kg =  (float) sanitizeInput($data_chunk[10]);
  
+
+      list($unit_1, $price_1, $unit_2, $price_2, $unit_3, $price_3, $unit_4, $price_4, $unit_5, $price_5) = [0,0,0,0,0,0,0,0,0,0];
     
-
-      $price_1 =  (float) sanitizeInput($new_arr[12]);
-      $unit_1 =  (float) sanitizeInput($new_arr[13]);
+      if(sanitizeInput($data_chunk[11]) != 0){
+      $price_1 =  (float) sanitizeInput($data_chunk[11]); 
+      }
+      if(sanitizeInput($data_chunk[12]) != 0){
+      $unit_1 =  (float) sanitizeInput($data_chunk[12]); 
+      }
    
-      $price_2 =  (float) sanitizeInput($new_arr[14]);
-      $unit_2 =  (float) sanitizeInput($new_arr[15]);
+      if(sanitizeInput($data_chunk[13]) != 0){
+      $price_2 =  (float) sanitizeInput($data_chunk[13]);
+      }
 
+      if(sanitizeInput($data_chunk[14]) != 0){
+      $unit_2 =  (float) sanitizeInput($data_chunk[14]);
+      }
 
-      $price_3 = (float) sanitizeInput($new_arr[16]);
-      $unit_3 =  (float) sanitizeInput($new_arr[17]);
+      if(sanitizeInput($data_chunk[15]) != 0){
+      $price_3 = (float) sanitizeInput($data_chunk[15]);
+      }
 
-  
-      $price_4 = (float) sanitizeInput($new_arr[18]);
-      $unit_4 =  (float) sanitizeInput($new_arr[19]);
-
+      if(sanitizeInput($data_chunk[16]) != 0){
+      $unit_3 =  (float) sanitizeInput($data_chunk[16]);
+      }
       
-      $price_5 = (float) sanitizeInput($new_arr[20]);
-      $unit_5 =  (float) sanitizeInput($new_arr[21]);
+      if(sanitizeInput($data_chunk[17]) != 0){
+      $price_4 = (float) sanitizeInput($data_chunk[17]);
+      }
 
-   
+      if(sanitizeInput($data_chunk[18]) != 0){
+      $unit_4 =  (float) sanitizeInput($data_chunk[18]);
+      }
 
-      $stock =  (float) sanitizeInput($new_arr[23]);
+      if(sanitizeInput($data_chunk[19]) != 0){
+      $price_5 = (float) sanitizeInput($data_chunk[19]);
+      }
+
+      if(sanitizeInput($data_chunk[20]) != 0){
+      $unit_5 =  (float) sanitizeInput($data_chunk[20]);
+      }
+
+
+if($unit_2 == $unit_1){
+  $unit_2 = 0;
+  $price_2 = 0;
+}
+
+
+if($unit_3 == $unit_1){
+  $unit_3= 0;
+  $price_3 = 0;
+}
+else{
+ if($unit_3 == $unit_2){
+  $unit_3 = 0;
+  $price_3 = 0;
+ } 
+}
+
+
+
+if($unit_4 == $unit_1){
+  $unit_4= 0;
+  $price_4 = 0;
+}
+else{
+  if($unit_4 == $unit_2){
+    $unit_4= 0;
+    $price_4 = 0;
+  }
+  else{
+    if($unit_4 == $unit_3){
+      $unit_4= 0;
+      $price_4 = 0;
+    }
+  }
+}
+
+
+
+if($unit_5 == $unit_1){
+  $unit_5 = 0;
+  $price_5 = 0;
+}
+else{
+  if($unit_5 == $unit_2){
+    $unit_5 = 0;
+    $price_5 = 0;
+  }
+  else{
+    if($unit_5 == $unit_3){
+      $unit_5 = 0;
+      $price_5 = 0;
+    }
+    else{
+      if($unit_5 == $unit_4){
+        $unit_5 = 0;
+        $price_5 = 0;
+      }
+    }
+  }
+}
+      $stock =  (float) sanitizeInput($data_chunk[22]);
     
-      $customs_tariff_number =  sanitizeInput($new_arr[24]);
+      $customs_tariff_number =  sanitizeInput($data_chunk[23]);
 // 
 
 
@@ -183,6 +296,14 @@ if ($product_variation) {
               if($product_variation->get('title')->value != $variation_title){
               $product_variation->set('title', $variation_title);
               }
+
+              if(isset($weight_kg) && !empty($weight_kg)){
+                $weight_attribute_id = getAttributeId('weight',$weight_kg);
+                $product_variation->set('attribute_weight', $weight_attribute_id);
+        }
+        else{
+                $product_variation->set('attribute_weight',  NULL);   
+        }
   
               $stock = ['stock' => ['value' => 0]];
    
@@ -192,27 +313,35 @@ if ($product_variation) {
 
 
               // Checking and updating price
+
               $price_list = \Drupal::entityTypeManager()
               ->getStorage('commerce_pricelist')
               ->loadByProperties(['name' => 'Price table']);
               $pricelist = reset($price_list);
+
+              $all_price_item = \Drupal::entityTypeManager()
+              ->getStorage('commerce_pricelist_item')
+              ->loadByProperties([
+                'type' => 'commerce_product_variation',
+                'purchasable_entity' => $product_variation->id(),
+                'price_list_id' => $pricelist->id()
+              ]);
+
+              if(isset($all_price_item) || !empty($all_price_item)){
+                foreach($all_price_item as $p){
+                  $p->delete();
+                }
+              }
               
               for ($i = 1; $i != 6; $i++) {
+                if(isset(${'unit_' . $i}) && isset(${'price_' . $i})){
                 $unit_variable = ${'unit_' . $i}; // Equivalent to $unit_1, $unit_2, etc.
                 $price_variable = ${'price_' . $i}; // Equivalent to $price_1, $price_2, etc.
-    
+
+
                 if (isset($unit_variable) && isset($price_variable)) {
-                  $existing_price_item = \Drupal::entityTypeManager()
-                    ->getStorage('commerce_pricelist_item')
-                    ->loadByProperties([
-                      'type' => 'commerce_product_variation',
-                      'quantity' => $unit_variable,
-                      'purchasable_entity' => $product_variation->id(),
-                      'price_list_id' => $pricelist->id()
-                    ]);
-                    $existing_price_item_data = reset($existing_price_item);
-  
-                  if (!isset($existing_price_item) || empty($existing_price_item)) {
+                 
+                  if($unit_variable!=0 && $price_variable!=0){
                     $price_item = PriceListItem::create([
                       'type' => 'commerce_product_variation',
                       'pricelist' => $pricelist->id(),
@@ -225,31 +354,9 @@ if ($product_variation) {
                     ]);
                     $price_item->save();
                   }
-                  else{
-                     if($existing_price_item_data->get('price')->value != $price_variable){
-                        $existing_price_item_data->set('price',
-                        [
-                          'number' => $price_variable,
-                          'currency_code' => 'EUR',
-                      ]
-                      );
-                        $existing_price_item_data->save();
-                     } 
-                  }
-                  // Save the PricelistItem.
-                  // $price_item->save();
                 }
               }
-
-
-      
-
-        if(isset($stock) && $stock > 0) {
-          $product->set('field_available_in_stock', 1);
-        }
-        else{
-          $product->set('field_available_in_stock', 0);
-        }
+            }
 
         if($product->get('field_article_group')->value != $article_group){
         $product->set('field_article_group', $article_group);
@@ -289,6 +396,28 @@ function custom_product_importer_batch_finished($success, $results, $operations)
     \Drupal::messenger()->addStatus(t('All products have been updating successfully.'));
   } else {
     \Drupal::messenger()->addError(t('An error occurred while importing products.'));
+  }
+}
+
+
+
+function getAttributeId($attr,$attribute_value)
+{
+  // Use the entity type manager to query for ProductAttributeValue entities.
+  $storage = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value');
+  $attribute_values = $storage->loadByProperties(['name' => $attribute_value]);
+
+  if (!empty($attribute_values)) {
+    // Return the first matching attribute value.
+    return reset($attribute_values)->id();
+  } else {
+    // Create a new ProductAttributeValue entity for the color.
+    $attribute = ProductAttributeValue::create([
+      'attribute' => $attr, // Ensuring this is the correct attribute machine name.
+      'name' => $attribute_value,
+    ]);
+    $attribute->save();
+    return $attribute->id();
   }
 }
 
